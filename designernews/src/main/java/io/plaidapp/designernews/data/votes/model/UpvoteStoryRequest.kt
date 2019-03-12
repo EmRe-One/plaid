@@ -14,8 +14,21 @@
  * limitations under the License.
  */
 
-package io.plaidapp.core.designernews.data.comments.model
+package io.plaidapp.designernews.data.votes.model
 
 import com.google.gson.annotations.SerializedName
 
-data class PostCommentResponse(@SerializedName("comments") val comments: List<CommentResponse>)
+class UpvoteStoryRequest(
+    storyId: Long,
+    userId: Long,
+    @SerializedName("upvotes") val upvote: UpvoteStory = UpvoteStory(
+        StoryVoteLinks(storyId, userId)
+    )
+)
+
+data class UpvoteStory(@SerializedName("links") val voteLinks: StoryVoteLinks)
+
+data class StoryVoteLinks(
+    @SerializedName("story") val storyId: Long,
+    @SerializedName("user") val userId: Long
+)

@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package io.plaidapp.core.designernews.data.comments
+package io.plaidapp.designernews.data.comments
 
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import io.plaidapp.core.data.Result
-import io.plaidapp.core.designernews.data.api.DesignerNewsService
-import io.plaidapp.core.designernews.data.comments.model.CommentResponse
-import io.plaidapp.core.designernews.data.comments.model.NewCommentRequest
-import io.plaidapp.core.designernews.data.comments.model.PostCommentResponse
-import io.plaidapp.core.designernews.errorResponseBody
-import io.plaidapp.core.designernews.repliesResponses
-import io.plaidapp.core.designernews.replyResponse1
+import io.plaidapp.designernews.data.api.DesignerNewsService
+import io.plaidapp.designernews.data.comments.model.CommentResponse
+import io.plaidapp.designernews.data.comments.model.NewCommentRequest
+import io.plaidapp.designernews.data.comments.model.PostCommentResponse
+import io.plaidapp.designernews.errorResponseBody
+import io.plaidapp.designernews.repliesResponses
+import io.plaidapp.designernews.replyResponse1
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -141,7 +141,11 @@ class CommentsRemoteDataSourceTest {
     @Test
     fun comment_withNoComments() = runBlocking {
         // Given a response returned for a request
-        val response = Response.success(PostCommentResponse(emptyList()))
+        val response = Response.success(
+            PostCommentResponse(
+                emptyList()
+            )
+        )
         val request = NewCommentRequest(body, "11", null, "111")
         whenever(service.comment(request)).thenReturn(CompletableDeferred(response))
 

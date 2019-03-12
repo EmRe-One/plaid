@@ -23,6 +23,8 @@ apply plugin: 'kotlin-kapt'
 apply from: '../core_dependencies.gradle'
 apply from: '../test_dependencies.gradle'
 
+apply from: '../repositories.gradle'
+
 android {
     compileSdkVersion versions.compileSdk
 
@@ -45,12 +47,6 @@ android {
     }
 }
 
-repositories {
-    google()
-    jcenter()
-    maven { url 'http://dl.bintray.com/kotlin/kotlin-eap' }
-}
-
 dependencies {
     implementation project(':app')
     implementation project(':core')
@@ -58,3 +54,7 @@ dependencies {
     kapt "com.google.dagger:dagger-compiler:${versions.dagger}"
 }
 
+// enabling experimental for Kotlin parcelize supports
+androidExtensions {
+    experimental = true
+}

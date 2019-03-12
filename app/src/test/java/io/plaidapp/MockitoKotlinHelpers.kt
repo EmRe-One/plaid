@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google, Inc.
+ * Copyright 2019 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package io.plaidapp.core.designernews.data.votes.model
+package io.plaidapp
 
-import com.google.gson.annotations.SerializedName
+import org.mockito.ArgumentCaptor
 
-class UpvoteStoryRequest(
-    storyId: Long,
-    userId: Long,
-    @SerializedName("upvotes") val upvote: UpvoteStory = UpvoteStory(StoryVoteLinks(storyId, userId))
-)
+/**
+ * Returns ArgumentCaptor.capture() as nullable type to avoid java.lang.IllegalStateException
+ * when null is returned.
+ */
+fun <T> capture(argumentCaptor: ArgumentCaptor<T>): T = argumentCaptor.capture()
 
-data class UpvoteStory(@SerializedName("links") val voteLinks: StoryVoteLinks)
-
-data class StoryVoteLinks(
-    @SerializedName("story") val storyId: Long,
-    @SerializedName("user") val userId: Long
-)
+/**
+ * Helper function for creating an argumentCaptor in kotlin.
+ */
+inline fun <reified T : Any> argumentCaptor(): ArgumentCaptor<T> =
+        ArgumentCaptor.forClass(T::class.java)

@@ -25,6 +25,7 @@ import io.plaidapp.core.designernews.domain.SearchStoriesUseCase;
 import io.plaidapp.core.dribbble.data.ShotsRepository;
 import io.plaidapp.core.dribbble.data.api.model.Shot;
 import io.plaidapp.core.producthunt.data.api.ProductHuntRepository;
+import io.plaidapp.core.producthunt.domain.LoadPostsUseCase;
 import io.plaidapp.core.ui.filter.FiltersChangedCallback;
 import kotlin.Unit;
 import retrofit2.Call;
@@ -48,20 +49,20 @@ public class DataManager implements LoadSourceCallback, DataLoadingSubject {
     private final ShotsRepository shotsRepository;
     private final LoadStoriesUseCase loadStoriesUseCase;
     private final SearchStoriesUseCase searchStoriesUseCase;
-    private final ProductHuntRepository productHuntRepository;
+    private final LoadPostsUseCase loadPosts;
     private final SourcesRepository sourcesRepository;
     private Map<String, Integer> pageIndexes;
     private Map<String, Call> inflightCalls = new HashMap<>();
 
     public DataManager(OnDataLoadedCallback<List<? extends PlaidItem>> onDataLoadedCallback,
                        LoadStoriesUseCase loadStoriesUseCase,
-                       ProductHuntRepository productHuntRepository,
+                       LoadPostsUseCase loadPosts,
                        SearchStoriesUseCase searchStoriesUseCase,
                        ShotsRepository shotsRepository,
                        SourcesRepository sourcesRepository) {
         super();
         this.loadStoriesUseCase = loadStoriesUseCase;
-        this.productHuntRepository = productHuntRepository;
+        this.loadPosts = loadPosts;
         this.searchStoriesUseCase = searchStoriesUseCase;
         this.shotsRepository = shotsRepository;
         this.sourcesRepository = sourcesRepository;
@@ -81,7 +82,7 @@ public class DataManager implements LoadSourceCallback, DataLoadingSubject {
     }
 
     public void loadAllDataSources() {
-        for (Source filter : sourcesRepository.getSources()) {
+        for (Source filter : sourcesRepository.getSourcesSync()) {
             loadSource(filter);
         }
     }
@@ -96,13 +97,13 @@ public class DataManager implements LoadSourceCallback, DataLoadingSubject {
         shotsRepository.cancelAllSearches();
         loadStoriesUseCase.cancelAllRequests();
         searchStoriesUseCase.cancelAllRequests();
-        productHuntRepository.cancelAllRequests();
+        loadPosts.cancelAllRequests();
     }
 
     private final FiltersChangedCallback filterListener = new FiltersChangedCallback() {
                 @Override
                 public void onFiltersChanged(Source changedFilter) {
-                    if (changedFilter.active) {
+                    if (changedFilter.getActive()) {
                         loadSource(changedFilter);
                     } else { // filter deactivated
                         final String key = changedFilter.key;
@@ -120,7 +121,7 @@ public class DataManager implements LoadSourceCallback, DataLoadingSubject {
             };
 
     private void loadSource(Source source) {
-        if (source.active) {
+        if (source.getActive()) {
             loadStarted();
             final int page = getNextPageIndex(source.key);
             switch (source.key) {
@@ -142,7 +143,7 @@ public class DataManager implements LoadSourceCallback, DataLoadingSubject {
     }
 
     private void setupPageIndexes() {
-        final List<Source> dateSources = sourcesRepository.getSources();
+        final List<Source> dateSources = sourcesRepository.getSourcesSync();
         pageIndexes = new HashMap<>(dateSources.size());
         for (Source source : dateSources) {
             pageIndexes.put(source.key, 0);
@@ -203,7 +204,7 @@ public class DataManager implements LoadSourceCallback, DataLoadingSubject {
 
     private void loadProductHunt(final int page) {
         // this API's paging is 0 based but this class (& sorting) is 1 based so adjust locally
-        productHuntRepository.loadProductHuntData(
+        loadPosts.invoke(
                 page - 1,
                 it -> {
                     sourceLoaded(it, page, SourcesRepository.SOURCE_PRODUCT_HUNT);

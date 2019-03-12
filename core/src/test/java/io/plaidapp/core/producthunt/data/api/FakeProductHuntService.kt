@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google, Inc.
+ * Copyright 2019 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package io.plaidapp.core.dagger
+package io.plaidapp.core.producthunt.data.api
 
-import dagger.Module
-import dagger.Provides
-import io.plaidapp.core.data.CoroutinesDispatcherProvider
-import kotlinx.coroutines.Dispatchers
+import io.plaidapp.core.producthunt.data.api.model.GetPostsResponse
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
+import retrofit2.Response
 
 /**
- * Provide [CoroutinesDispatcherProvider] to this app's components.
+ * Fake implementation of [ProductHuntService]
  */
-@Module
-class CoroutinesDispatcherProviderModule {
+abstract class FakeProductHuntService : ProductHuntService {
 
-    @Provides
-    fun provideCoroutinesDispatcherProvider() = CoroutinesDispatcherProvider(
-        Dispatchers.Main,
-        Dispatchers.Default,
-        Dispatchers.IO
-    )
+    override fun getPostsAsync(page: Int): Deferred<Response<GetPostsResponse>> {
+        return CompletableDeferred(getPostsResponse())
+    }
+
+    abstract fun getPostsResponse(): Response<GetPostsResponse>
 }

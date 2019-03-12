@@ -20,18 +20,16 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
+import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import io.plaidapp.core.BuildConfig
 import io.plaidapp.core.dagger.CoreDataModule
-import io.plaidapp.core.dagger.CoroutinesDispatcherProviderModule
 import io.plaidapp.core.dagger.SharedPreferencesModule
-import io.plaidapp.core.data.api.DenvelopingConverter
+import io.plaidapp.core.data.api.DeEnvelopingConverter
 import io.plaidapp.core.designernews.data.api.ClientAuthInterceptor
 import io.plaidapp.core.designernews.data.api.DesignerNewsSearchConverter
 import io.plaidapp.core.designernews.data.api.DesignerNewsService
-import io.plaidapp.core.designernews.data.comments.CommentsRemoteDataSource
-import io.plaidapp.core.designernews.data.comments.CommentsRepository
 import io.plaidapp.core.designernews.data.database.DesignerNewsDatabase
 import io.plaidapp.core.designernews.data.database.LoggedInUserDao
 import io.plaidapp.core.designernews.data.login.AuthTokenLocalDataSource
@@ -43,6 +41,12 @@ import io.plaidapp.core.designernews.data.stories.StoriesRepository
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import javax.inject.Qualifier
+import kotlin.annotation.AnnotationRetention.BINARY
+
+@Retention(BINARY)
+@Qualifier
+private annotation class LocalApi
 
 /**
  * Dagger module to provide data functionality for DesignerNews.
@@ -50,8 +54,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 @Module(
     includes = [
         SharedPreferencesModule::class,
-        CoreDataModule::class,
-        CoroutinesDispatcherProviderModule::class
+        CoreDataModule::class
     ]
 )
 class DesignerNewsDataModule {
@@ -69,20 +72,26 @@ class DesignerNewsDataModule {
     ): AuthTokenLocalDataSource =
         AuthTokenLocalDataSource.getInstance(sharedPreferences)
 
+    @LocalApi
     @Provides
-    fun provideDesignerNewsService(
-        okHttpClientBuilder: OkHttpClient.Builder,
-        tokenHolder: AuthTokenLocalDataSource,
-        gson: Gson
-    ): DesignerNewsService {
-        val client = okHttpClientBuilder
+    fun providePrivateOkHttpClient(
+        upstream: OkHttpClient,
+        tokenHolder: AuthTokenLocalDataSource
+    ): OkHttpClient {
+        return upstream.newBuilder()
             .addInterceptor(ClientAuthInterceptor(tokenHolder, BuildConfig.DESIGNER_NEWS_CLIENT_ID))
             .build()
+    }
 
+    @Provides
+    fun provideDesignerNewsService(
+        @LocalApi client: Lazy<OkHttpClient>,
+        gson: Gson
+    ): DesignerNewsService {
         return Retrofit.Builder()
             .baseUrl(DesignerNewsService.ENDPOINT)
-            .client(client)
-            .addConverterFactory(DenvelopingConverter(gson))
+            .callFactory { client.get().newCall(it) }
+            .addConverterFactory(DeEnvelopingConverter(gson))
             .addConverterFactory(DesignerNewsSearchConverter.Factory())
             .addConverterFactory(GsonConverterFactory.create(gson))
             .addCallAdapterFactory(CoroutineCallAdapterFactory())
@@ -105,8 +114,4 @@ class DesignerNewsDataModule {
     fun provideStoriesRemoteDataSource(service: DesignerNewsService): StoriesRemoteDataSource {
         return StoriesRemoteDataSource.getInstance(service)
     }
-
-    @Provides
-    fun provideCommentsRepository(dataSource: CommentsRemoteDataSource): CommentsRepository =
-        CommentsRepository.getInstance(dataSource)
 }

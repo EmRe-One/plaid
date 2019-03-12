@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package io.plaidapp.designernews.dagger
+package io.plaidapp.designernews.data.votes.model
 
-import dagger.Module
-import io.plaidapp.core.dagger.CoreDataModule
-import io.plaidapp.core.dagger.SharedPreferencesModule
-import io.plaidapp.core.dagger.designernews.DesignerNewsDataModule
+import com.google.gson.annotations.SerializedName
 
-/**
- * Dagger module for [io.plaidapp.designernews.ui.login.LoginActivity].
- */
-@Module(
-    includes = [
-        CoreDataModule::class,
-        DesignerNewsDataModule::class,
-        SharedPreferencesModule::class
-    ]
+class UpvoteCommentRequest(
+    commentId: Long,
+    userId: Long,
+    @SerializedName("comment_upvotes") val upvote: UpvoteComment = UpvoteComment(
+        CommentVoteLinks(commentId, userId)
+    )
 )
-class LoginModule
+
+data class UpvoteComment(@SerializedName("links") val voteLinks: CommentVoteLinks)
+
+data class CommentVoteLinks(
+    @SerializedName("comment") val commentId: Long,
+    @SerializedName("user") val userId: Long
+)

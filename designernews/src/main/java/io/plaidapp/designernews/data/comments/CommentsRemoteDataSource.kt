@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.plaidapp.core.designernews.data.comments
+package io.plaidapp.designernews.data.comments
 
 import io.plaidapp.core.data.Result
-import io.plaidapp.core.designernews.data.api.DesignerNewsService
-import io.plaidapp.core.designernews.data.comments.model.CommentResponse
-import io.plaidapp.core.designernews.data.comments.model.NewCommentRequest
+import io.plaidapp.designernews.data.comments.model.CommentResponse
+import io.plaidapp.designernews.data.comments.model.NewCommentRequest
 import io.plaidapp.core.util.safeApiCall
+import io.plaidapp.designernews.data.api.DesignerNewsService
 import java.io.IOException
 
 /**

@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-package io.plaidapp.core.designernews.data.votes.model
+package io.plaidapp.core.designernews.data.api
 
-import com.google.gson.annotations.SerializedName
-
-class UpvoteCommentRequest(
-    commentId: Long,
-    userId: Long,
-    @SerializedName("comment_upvotes") val upvote: UpvoteComment = UpvoteComment(CommentVoteLinks(commentId, userId))
-)
-
-data class UpvoteComment(@SerializedName("links") val voteLinks: CommentVoteLinks)
-
-data class CommentVoteLinks(
-    @SerializedName("comment") val commentId: Long,
-    @SerializedName("user") val userId: Long
-)
+/**
+ * Used to differentiate Designer News search response (HTML) from the JSON API responses.
+ */
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+internal annotation class DesignerNewsSearch

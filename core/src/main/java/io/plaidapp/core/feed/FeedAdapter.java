@@ -15,7 +15,7 @@
  *
  */
 
-package io.plaidapp.core.ui;
+package io.plaidapp.core.feed;
 
 import android.app.Activity;
 import android.app.ActivityOptions;
@@ -50,7 +50,6 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.util.ViewPreloadSizeProvider;
 import io.plaidapp.core.R;
-import io.plaidapp.core.data.DataLoadingSubject;
 import io.plaidapp.core.data.PlaidItem;
 import io.plaidapp.core.data.pocket.PocketUtils;
 import io.plaidapp.core.designernews.data.stories.model.Story;
@@ -59,6 +58,8 @@ import io.plaidapp.core.dribbble.data.api.model.Images;
 import io.plaidapp.core.dribbble.data.api.model.Shot;
 import io.plaidapp.core.producthunt.data.api.model.Post;
 import io.plaidapp.core.producthunt.ui.ProductHuntPostHolder;
+import io.plaidapp.core.ui.DribbbleShotHolder;
+import io.plaidapp.core.ui.HomeGridItemAnimator;
 import io.plaidapp.core.ui.transitions.ReflowText;
 import io.plaidapp.core.util.Activities;
 import io.plaidapp.core.util.ActivityHelper;
@@ -69,7 +70,6 @@ import io.plaidapp.core.util.glide.DribbbleTarget;
 import io.plaidapp.core.util.glide.GlideApp;
 import kotlin.Unit;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -79,8 +79,7 @@ import java.util.Map;
  * Adapter for displaying a grid of {@link PlaidItem}s.
  */
 public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
-        implements DataLoadingSubject.DataLoadingCallbacks,
-        ListPreloader.PreloadModelProvider<Shot> {
+        implements ListPreloader.PreloadModelProvider<Shot> {
 
     public static final int REQUEST_CODE_VIEW_SHOT = 5407;
 
@@ -93,30 +92,21 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     private final Activity host;
     private final LayoutInflater layoutInflater;
     private final boolean pocketIsInstalled;
-    @Nullable
-    private final DataLoadingSubject dataLoading;
     private final int columns;
     private final ColorDrawable[] shotLoadingPlaceholders;
-    private final ViewPreloadSizeProvider<Shot> shotPreloadSizeProvider;
+    private final ViewPreloadSizeProvider<Shot> shotPreloadSizeProvider = new ViewPreloadSizeProvider<>();
 
     @ColorInt
     private final int initialGifBadgeColor;
     private List<PlaidItem> items;
     private boolean showLoadingMore = false;
 
-    @Inject
     public FeedAdapter(Activity hostActivity,
-                       @Nullable DataLoadingSubject dataLoading,
                        int columns,
-                       boolean pocketInstalled, ViewPreloadSizeProvider<Shot> shotPreloadSizeProvider) {
+                       boolean pocketInstalled) {
         this.host = hostActivity;
-        this.dataLoading = dataLoading;
-        if (dataLoading != null) {
-            dataLoading.registerCallback(this);
-        }
         this.columns = columns;
         this.pocketIsInstalled = pocketInstalled;
-        this.shotPreloadSizeProvider = shotPreloadSizeProvider;
         layoutInflater = LayoutInflater.from(host);
         items = new ArrayList<>();
         setHasStableIds(true);
@@ -329,10 +319,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     private void bindLoadingViewHolder(LoadingMoreHolder holder, int position) {
         // only show the infinite load progress spinner if there are already items in the
         // grid i.e. it's not the first item & data is being loaded
-        holder.setVisibility((position > 0
-                && dataLoading != null
-                && dataLoading.isDataLoading())
-                ? View.VISIBLE : View.INVISIBLE);
+        holder.setVisibility((position > 0 && showLoadingMore) ? View.VISIBLE : View.INVISIBLE);
     }
 
     @Override
@@ -363,61 +350,11 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         return getItem(position).getColspan();
     }
 
-    public void clear() {
-        items.clear();
-        notifyDataSetChanged();
-    }
-
     /**
-     * Main entry point for setting items to this adapter. Will also expand some items to span multiple
-     * grid columns.
+     * Main entry point for setting items to this adapter.
      */
     public void setItems(List<PlaidItem> newItems) {
         items = newItems;
-        expandPopularItems();
-        notifyDataSetChanged();
-    }
-
-    private void expandPopularItems() {
-        // for now just expand the first dribbble image per page which should be
-        // the most popular according to our weighing & sorting
-        List<Integer> expandedPositions = new ArrayList<>();
-        int page = -1;
-        final int count = items.size();
-        for (int i = 0; i < count; i++) {
-            PlaidItem item = getItem(i);
-            if (item instanceof Shot && item.getPage() > page) {
-                item.setColspan(columns);
-                page = item.getPage();
-                expandedPositions.add(i);
-            } else {
-                item.setColspan(1);
-            }
-        }
-
-        // make sure that any expanded items are at the start of a row
-        // so that we don't leave any gaps in the grid
-        for (int expandedPos = 0; expandedPos < expandedPositions.size(); expandedPos++) {
-            int pos = expandedPositions.get(expandedPos);
-            int extraSpannedSpaces = expandedPos * (columns - 1);
-            int rowPosition = (pos + extraSpannedSpaces) % columns;
-            if (rowPosition != 0) {
-                int swapWith = pos + (columns - rowPosition);
-                if (swapWith < items.size()) {
-                    Collections.swap(items, pos, swapWith);
-                }
-            }
-        }
-    }
-
-    public void removeDataSource(String dataSource) {
-        for (int i = items.size() - 1; i >= 0; i--) {
-            PlaidItem item = items.get(i);
-            if (dataSource.equals(item.getDataSource())) {
-                items.remove(i);
-            }
-        }
-        expandPopularItems();
         notifyDataSetChanged();
     }
 
@@ -476,14 +413,12 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         return showLoadingMore ? getItemCount() - 1 : RecyclerView.NO_POSITION;
     }
 
-    @Override
     public void dataStartedLoading() {
         if (showLoadingMore) return;
         showLoadingMore = true;
         notifyItemInserted(getLoadingMoreItemPosition());
     }
 
-    @Override
     public void dataFinishedLoading() {
         if (!showLoadingMore) return;
         final int loadingPos = getLoadingMoreItemPosition();

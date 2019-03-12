@@ -27,7 +27,7 @@ import io.plaidapp.core.data.prefs.SourcesRepository
 import io.plaidapp.core.designernews.domain.LoadStoriesUseCase
 import io.plaidapp.core.designernews.domain.SearchStoriesUseCase
 import io.plaidapp.core.dribbble.data.ShotsRepository
-import io.plaidapp.core.producthunt.data.api.ProductHuntRepository
+import io.plaidapp.core.producthunt.domain.LoadPostsUseCase
 
 /**
  * Module to provide [DataManager].
@@ -40,16 +40,16 @@ class DataManagerModule {
     @Provides
     fun provideDataManager(
         onDataLoadedCallback: OnDataLoadedCallback<List<PlaidItem>>,
-        loadStoriesUseCase: LoadStoriesUseCase,
-        searchStoriesUseCase: SearchStoriesUseCase,
-        productHuntRepository: ProductHuntRepository,
+        loadStories: LoadStoriesUseCase,
+        searchStories: SearchStoriesUseCase,
+        loadPosts: LoadPostsUseCase,
         shotsRepository: ShotsRepository,
         sourcesRepository: SourcesRepository
     ): DataManager = getDataManager(
         onDataLoadedCallback,
-        loadStoriesUseCase,
-        productHuntRepository,
-        searchStoriesUseCase,
+        loadStories,
+        loadPosts,
+        searchStories,
         shotsRepository,
         sourcesRepository
     )
@@ -57,25 +57,25 @@ class DataManagerModule {
     @Provides
     fun provideDataLoadingSubject(
         onDataLoadedCallback: OnDataLoadedCallback<List<PlaidItem>>,
-        loadStoriesUseCase: LoadStoriesUseCase,
-        productHuntRepository: ProductHuntRepository,
-        searchStoriesUseCase: SearchStoriesUseCase,
+        loadStories: LoadStoriesUseCase,
+        loadPosts: LoadPostsUseCase,
+        searchStories: SearchStoriesUseCase,
         shotsRepository: ShotsRepository,
         sourcesRepository: SourcesRepository
     ): DataLoadingSubject = getDataManager(
         onDataLoadedCallback,
-        loadStoriesUseCase,
-        productHuntRepository,
-        searchStoriesUseCase,
+        loadStories,
+        loadPosts,
+        searchStories,
         shotsRepository,
         sourcesRepository
     )
 
     private fun getDataManager(
         onDataLoadedCallback: OnDataLoadedCallback<List<PlaidItem>>,
-        loadStoriesUseCase: LoadStoriesUseCase,
-        productHuntRepository: ProductHuntRepository,
-        searchStoriesUseCase: SearchStoriesUseCase,
+        loadStories: LoadStoriesUseCase,
+        loadPosts: LoadPostsUseCase,
+        searchStories: SearchStoriesUseCase,
         shotsRepository: ShotsRepository,
         sourcesRepository: SourcesRepository
     ): DataManager {
@@ -84,9 +84,9 @@ class DataManagerModule {
         } else {
             manager = DataManager(
                 onDataLoadedCallback,
-                loadStoriesUseCase,
-                productHuntRepository,
-                searchStoriesUseCase,
+                loadStories,
+                loadPosts,
+                searchStories,
                 shotsRepository,
                 sourcesRepository
             )
